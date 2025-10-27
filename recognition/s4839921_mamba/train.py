@@ -30,7 +30,7 @@ model = MambaIRv2(
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
 # ==== Load pretrained ====
-ckpt_path = './new_color_model_last_no_lora.pth'  # 你指定的初始权重
+ckpt_path = './mambairv2_ColorDN_15.pth'  # path to pretrained model (change to your path)
 checkpoint = torch.load(ckpt_path, map_location='cpu')
 state_dict = checkpoint.get('params', checkpoint)
 model.load_state_dict(state_dict, strict=False)
