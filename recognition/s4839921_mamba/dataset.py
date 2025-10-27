@@ -24,7 +24,7 @@ class ColorizationDataset(Dataset):
         return gray_stacked, color
 
 class ColorJitter(object):
-    """随机调整亮度、对比度、饱和度、色相"""
+    """Randomly adjust brightness, contrast, saturation, and hue"""
     def __init__(self, brightness=0.2, contrast=0.2, saturation=0.3, hue=0.1):
         self.brightness = brightness
         self.contrast = contrast
@@ -109,7 +109,7 @@ class AugColorizationDataset(Dataset):
     def __getitem__(self, idx):
         img = Image.open(self.img_paths[idx]).convert('RGB')
         
-        # 教师扰动
+        # teacher perturbation
         if self.use_augmentation and torch.rand(1).item() > 0.3:
             img = self.color_jitter(img)
         
