@@ -26,12 +26,12 @@ model = MambaIRv2(
 ).to(device)
 
 # Load checkpoint
-checkpoint = torch.load('final_model.pth', map_location='cpu')
+checkpoint = torch.load('./checkpoints/best_stage_2.pth', map_location='cpu')
 state_dict = checkpoint.get('params', checkpoint)
 model.load_state_dict(state_dict, strict=False)
 
 
-img_dir = '/content/drive/MyDrive/1k'  # replace with your test image directory
+img_dir = './datasets/val2017'  # replace with your test image directory
 
 # collect common image extensions (assume folder contains only grayscale images)
 extensions = ('*.png', '*.jpg', '*.jpeg', '*.bmp', '*.tif', '*.tiff')
