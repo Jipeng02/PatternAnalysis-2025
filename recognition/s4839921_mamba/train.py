@@ -71,7 +71,7 @@ def param_groups_for_decay(modules):
 optimizer = torch.optim.AdamW(param_groups_for_decay(train_modules))
 
 # ==== Training Loop ====
-num_epochs = 10
+num_epochs = 5
 
 for epoch in range(num_epochs):
     model.train()
