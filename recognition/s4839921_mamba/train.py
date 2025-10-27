@@ -6,6 +6,11 @@ import torch, torch.nn
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
 import lpips
+import os
+
+# ==== Create checkpoints directory ====
+os.makedirs('./checkpoints', exist_ok=True)
+
 model = MambaIRv2(
     img_size=128, # image size
     patch_size=1,
@@ -29,11 +34,15 @@ model = MambaIRv2(
 # ==== Device ====
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 model = model.to(device)
-# ==== Load pretrained ====
+# ==== Load pretrained (if exists) ====
 ckpt_path = './mambairv2_ColorDN_15.pth'  # path to pretrained model (change to your path)
-checkpoint = torch.load(ckpt_path, map_location='cpu')
-state_dict = checkpoint.get('params', checkpoint)
-model.load_state_dict(state_dict, strict=False)
+if os.path.exists(ckpt_path):
+    checkpoint = torch.load(ckpt_path, map_location='cpu')
+    state_dict = checkpoint.get('params', checkpoint)
+    model.load_state_dict(state_dict, strict=False)
+    print(f"Loaded pretrained model from {ckpt_path}")
+else:
+    print(f"Warning: Pretrained model not found at {ckpt_path}, training from scratch")
 
 # ==== Freeze backbone; only train conv_first / conv_after_body / conv_last ====
 for p in model.parameters():
@@ -50,7 +59,9 @@ for m in train_modules:
         p.requires_grad = True
 
 # ==== Dataset & DataLoader ====
-img_dir   = 'YOUR_COCO2017/VAL2017'  # 5000 images for training
+img_dir   = './datasets/val2017'  # COCO 2017 Validation - 5000 images for training
+if not os.path.exists(img_dir):
+    raise FileNotFoundError(f"Dataset directory not found: {img_dir}. Please download COCO 2017 Validation dataset first.")
 transform = T.Compose([T.Resize((128,128)), T.ToTensor()])
 dataset   = ColorizationDataset(img_dir, transform=transform)
 loader    = DataLoader(dataset, batch_size=2, shuffle=True, num_workers=2, pin_memory=True)
@@ -105,10 +116,11 @@ for epoch in range(num_epochs):
             print(f"  Epoch {epoch+1}, Batch {batch_idx+1}/{len(loader)}: Loss={avg_so_far:.6f}")
 
     avg_loss = running_loss / (batch_count * loader.batch_size)
+    print(f"Epoch {epoch+1}/{num_epochs} finished: Avg Loss={avg_loss:.6f}")
 
 
 # ==== Save last only ====
-save_path = "./checkpoints/stage_1.pth" # change to your desired path
+save_path = "./checkpoints/stage_1.pth"
 torch.save(model.state_dict(), save_path)
 print(f"Saved final weights to: {save_path}")
 print("Stage 1 training complete.")
@@ -120,7 +132,9 @@ for p in model.parameters():
     p.requires_grad = True
 
 # ==== Dataset & DataLoader ====
-img_dir = './YOUR_COCO2017/VAL2017'  # 5000 images for training
+img_dir = './datasets/val2017'  # COCO 2017 Validation - 5000 images for training
+if not os.path.exists(img_dir):
+    raise FileNotFoundError(f"Dataset directory not found: {img_dir}. Please download COCO 2017 Validation dataset first.")
 transform = T.Compose([T.Resize((128, 128)), T.ToTensor()])
 dataset = AugColorizationDataset(img_dir, transform=transform, use_augmentation=True)
 batch_size = 1
@@ -211,16 +225,16 @@ for epoch in range(num_epochs):
 
         if avg_loss < best_loss:
             best_loss = avg_loss
-            torch.save(model.state_dict(), "./best_stage_2.pth") #change to your desired path
+            torch.save(model.state_dict(), "./checkpoints/best_stage_2.pth")
             print(f"  ✓ Saved best model (Loss: {avg_loss:.6f})")
 
         print("="*60 + "\n")
 
 
 # ==== Save final model ====
-save_path = "./checkpoints/stage_2.pth" # change to your desired path
+save_path = "./checkpoints/stage_2.pth"
 torch.save(model.state_dict(), save_path)
 print(f"\n✓ Training completed!")
 print(f"✓ Final model saved to: {save_path}")
-print(f"✓ Best model (Loss={best_loss:.6f}) saved to: ./checkpoints/best_stage_2.pth") #change to your desired path
+print(f"✓ Best model (Loss={best_loss:.6f}) saved to: ./checkpoints/best_stage_2.pth")
 print("Stage 2 training complete.")
