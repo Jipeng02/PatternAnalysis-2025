@@ -331,7 +331,6 @@ gray_input = gray.repeat(3, 1, 1)
 - **Model selection**: Best model saved based on training loss (Stage 2)
 - **Generalization**: Augmentation in Stage 2 acts as regularization
 
-**Note**: For production use, recommend 80/10/10 split with ≥50,000 images.
 
 ### Training Configuration
 
