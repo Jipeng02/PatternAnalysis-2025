@@ -3,6 +3,8 @@ from PIL import Image
 import os
 import torchvision.transforms as T
 import torch
+import random
+
 class ColorizationDataset(Dataset):
     def __init__(self, img_dir, transform=None, max_samples=None):
         self.img_paths = [os.path.join(img_dir, f)
@@ -118,3 +120,41 @@ class AugColorizationDataset(Dataset):
         gray_tensor = self.transform(gray) if self.transform else T.ToTensor()(gray)
         gray_stacked = gray_tensor.repeat(3, 1, 1)
         return gray_stacked, color
+
+
+# ==== HuggingFace Dataset for ImageNet ====
+class HFImageNetDataset(Dataset):
+    """Dataset wrapper for HuggingFace ImageNet-1K-128x128 dataset"""
+    def __init__(self, hf_dataset, transform=None, use_augmentation=True):
+        self.ds = hf_dataset
+        self.transform = transform
+        self.to_gray = T.Grayscale(num_output_channels=1)
+        self.use_augmentation = use_augmentation
+        if use_augmentation:
+            self.color_jitter = ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2)
+    
+    def __len__(self):
+        return len(self.ds)
+    
+    def __getitem__(self, idx):
+        try:
+            img = self.ds[idx]["image"].convert("RGB")
+            
+            # Apply augmentation
+            if self.use_augmentation and torch.rand(1).item() > 0.5:
+                img = self.color_jitter(img)
+            
+            color = self.transform(img) if self.transform else T.ToTensor()(img)
+            gray = self.to_gray(img)
+            gray_tensor = self.transform(gray) if self.transform else T.ToTensor()(gray)
+            gray_stacked = gray_tensor.repeat(3, 1, 1)
+            
+            # NaN check
+            if torch.isnan(color).any() or torch.isnan(gray_stacked).any():
+                return self.__getitem__((idx + 1) % len(self.ds))
+            
+            return gray_stacked, color
+        except Exception:
+            # If error, try next sample
+            return self.__getitem__((idx + 1) % len(self.ds))
+

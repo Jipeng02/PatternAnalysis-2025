@@ -59,7 +59,7 @@ for m in train_modules:
         p.requires_grad = True
 
 # ==== Dataset & DataLoader ====
-img_dir   = './datasets/val2017'  # COCO 2017 Validation - 5000 images for training
+img_dir   = './datasets_COCO2017/val2017'  # COCO 2017 Validation - 5000 images for training
 if not os.path.exists(img_dir):
     raise FileNotFoundError(f"Dataset directory not found: {img_dir}. Please download COCO 2017 Validation dataset first.")
 transform = T.Compose([T.Resize((128,128)), T.ToTensor()])
@@ -132,7 +132,7 @@ for p in model.parameters():
     p.requires_grad = True
 
 # ==== Dataset & DataLoader ====
-img_dir = './datasets/val2017'  # COCO 2017 Validation - 5000 images for training
+img_dir = './datasets_COCO2017/val2017'  # COCO 2017 Validation - 5000 images for training
 if not os.path.exists(img_dir):
     raise FileNotFoundError(f"Dataset directory not found: {img_dir}. Please download COCO 2017 Validation dataset first.")
 transform = T.Compose([T.Resize((128, 128)), T.ToTensor()])

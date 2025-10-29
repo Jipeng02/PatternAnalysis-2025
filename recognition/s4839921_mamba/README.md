@@ -171,6 +171,16 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 | `numpy` | 1.26.4 | Numerical operations |
 | `opencv-python` | 4.9.0.80 | Computer vision utilities |
 
+### Dataset & Data Processing
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `datasets` | 4.3.0 | HuggingFace datasets (ImageNet) |
+| `pandas` | 2.3.3 | Data manipulation |
+| `pyarrow` | 22.0.0 | Efficient columnar data |
+| `dill` | 0.4.0 | Extended pickling support |
+| `multiprocess` | 0.70.16 | Parallel data processing |
+| `xxhash` | 3.6.0 | Fast hashing for datasets |
+
 ### Model & Training
 | Package | Version | Purpose |
 |---------|---------|---------|
@@ -179,6 +189,8 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 | `peft` | 0.17.1 | Parameter-efficient fine-tuning |
 | `accelerate` | 1.10.1 | Distributed training |
 | `huggingface-hub` | 0.35.3 | Model hub integration |
+| `safetensors` | 0.6.2 | Safe tensor serialization |
+| `tokenizers` | 0.13.3 | Fast text tokenization |
 
 ### Utilities
 | Package | Version | Purpose |
@@ -186,7 +198,26 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 | `tqdm` | 4.67.1 | Progress bars |
 | `scipy` | 1.15.3 | Scientific computing |
 | `PyYAML` | 6.0.3 | Configuration files |
-| `safetensors` | 0.6.2 | Safe tensor serialization |
+| `requests` | 2.32.5 | HTTP library |
+| `fsspec` | 2025.9.0 | Filesystem spec |
+| `filelock` | 3.19.1 | Platform-independent file locking |
+
+### Networking & HTTP
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `aiohttp` | 3.13.1 | Async HTTP client/server |
+| `httpx` | 0.28.1 | Next-gen HTTP client |
+| `httpcore` | 1.0.9 | HTTP core library |
+| `aiohappyeyeballs` | 2.6.1 | Fast async DNS resolver |
+
+### System & Development
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `psutil` | 7.1.0 | System monitoring |
+| `regex` | 2025.9.18 | Advanced regex operations |
+| `redo` | 3.0.0 | Retry operations |
+| `SQLAlchemy` | 2.0.44 | SQL toolkit |
+| `Jinja2` | 3.1.6 | Template engine |
 
 ### CUDA Requirements
 - **CUDA**: 11.8 (compatible with torch 2.1.1+cu118)
@@ -197,7 +228,14 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 - **Not recommended**: Consumer GPUs with <20GB VRAM (RTX 3090, RTX 4090, V100 16GB)
 
 ### Complete Dependencies
-See `requirements.txt` for the complete list of all dependencies including system utilities and sub-dependencies.
+See `requirements.txt` for the complete list of all dependencies including:
+- **Math & Computation**: sympy (1.14.0), mpmath (1.3.0), networkx (3.3)
+- **Networking**: Twisted (25.5.0), Automat (25.4.16), hyperlink (21.0.0)
+- **Data Formats**: simplejson (3.20.2), tomli (2.3.0), furl (2.1.4)
+- **Build Tools**: ninja (1.13.0), buildtools (1.0.6), docopt (0.6.2)
+- **Additional**: hf-xet (1.1.10), orderedmultidict (1.0.1), and more
+
+Total: **70+ packages** ensuring full compatibility across different systems and use cases.
 
 ---
 
@@ -257,7 +295,7 @@ wget https://github.com/csguoh/MambaIR/releases/download/v1.0/mambairv2_ColorDN_
 
 # Download dataset
 wget http://images.cocodataset.org/zips/val2017.zip
-unzip val2017.zip -d ./datasets/
+unzip val2017.zip -d ./datasets_COCO2017/
 
 # Verify setup
 python -c "import torch, mamba_ssm, lpips; print('✓ Ready to train!')"
@@ -275,7 +313,7 @@ python -c "import torch, mamba_ssm, lpips; print('✓ Ready to train!')"
 ### Download Instructions
 ```bash
 wget http://images.cocodataset.org/zips/val2017.zip
-unzip val2017.zip -d ./datasets/
+unzip val2017.zip -d ./datasets_COCO2017/
 ```
 
 ### Preprocessing Pipeline
@@ -362,44 +400,114 @@ Prevents gradient explosion in deep Mamba blocks.
 
 ### Training
 
+This project provides **two training approaches**:
+
+#### Option 1: Standard Training (COCO Dataset - Two-Stage)
+
 **Prerequisites**: 
 - Ensure `mambairv2_ColorDN_15.pth` is in the project root directory
-- Download COCO 2017 Validation dataset to `./datasets/val2017/`
+- Download COCO 2017 Validation dataset to `./datasets_COCO2017/val2017/`
 
-#### Stage 1: Shallow Layer Fine-tuning
+**Run Training:**
 ```bash
-# Edit train.py to set:
-# - img_dir = './datasets/val2017'
-# - ckpt_path = './mambairv2_ColorDN_15.pth'  # Pretrained weights
-
 python train.py
-# Output: ./checkpoints/stage_1.pth
 ```
 
-**What happens in Stage 1:**
-- Loads pretrained weights from `mambairv2_ColorDN_15.pth`
-- Freezes all Mamba blocks (backbone)
-- Only trains conv_first, conv_after_body, conv_last layers
-- Uses clean COCO images without augmentation
-- Trains for 5 epochs with Lab L1 loss
+**Training Process:**
+- **Stage 1** (5 epochs): Shallow layer fine-tuning
+  - Freezes Mamba blocks (backbone)
+  - Trains only conv_first, conv_after_body, conv_last
+  - Uses clean COCO images without augmentation
+  - Loss: Lab L1 only (w_ab=1.0, w_L=0.15)
+  - Output: `./checkpoints/stage_1.pth`
 
-#### Stage 2: Full Model Training
+- **Stage 2** (15 epochs): Full model training
+  - Unfreezes all parameters
+  - Uses augmented COCO images (color jitter)
+  - Loss: Lab L1 + LPIPS (w_lpips=0.5)
+  - Outputs:
+    - `./checkpoints/stage_2.pth` (final)
+    - `./checkpoints/best_stage_2.pth` (lowest loss)
+
+---
+
+#### Option 2: Improved Training (ImageNet Dataset - Single-Stage)
+
+**Prerequisites**: 
+- Ensure `mambairv2_ColorDN_15.pth` is in the project root directory
+- Ensure at least more 7GB disk for dataset cache
+- **No manual dataset download required** - Dataset loads automatically from HuggingFace
+
+**Basic Usage:**
 ```bash
-# Uncomment Stage 2 section in train.py
-# Ensure Stage 1 checkpoint is loaded
-
-python train.py
-# Outputs:
-# - ./checkpoints/stage_2.pth (final)
-# - ./best_stage_2.pth (lowest loss)
+python train_improved.py
 ```
 
-**What happens in Stage 2:**
-- Loads Stage 1 checkpoint
-- Unfreezes all parameters
-- Uses augmented COCO images (color jitter)
-- Trains for 15 epochs with Lab L1 + LPIPS loss
-- Saves best model based on total loss
+**Advanced Usage with Custom Parameters:**
+```bash
+# Train with 200 classes (instead of default 100)
+python train_improved.py --num_classes 200
+
+# Train with more samples per epoch
+python train_improved.py --samples_per_epoch 5000
+
+# Train for more epochs with different learning rate
+python train_improved.py --epochs 15 --lr 1e-4
+
+# Full ImageNet training (1000 classes, will take ~100+ hours)
+python train_improved.py --num_classes 1000 --samples_per_epoch 10000 --epochs 20
+```
+
+**Available Arguments:**
+```bash
+--num_classes         Number of ImageNet classes (default: 100, max: 1000)
+--samples_per_epoch   Samples per epoch (default: 3000)
+--epochs              Number of epochs (default: 10)
+--batch_size          Batch size (default: 1)
+--accumulation_steps  Gradient accumulation (default: 4)
+--lr                  Learning rate (default: 5e-5)
+--pretrained_path     Path to pretrained weights (default: ./mambairv2_ColorDN_15.pth)
+--save_dir            Checkpoint directory (default: ./checkpoints_imagenet)
+--vis_dir             Visualization directory (default: ./vis_imagenet)
+```
+
+**Training Features:**
+- **Dynamic Sampling**: Randomly samples from dataset each epoch for better generalization
+- **NaN Handling**: Robust error detection and recovery
+- **Safe Loss Functions**: Improved Lab conversion with clamping
+- **Automatic Visualization**: Saves comparison images every 2 epochs
+- **Gradient Accumulation**: Effective batch size = batch_size × accumulation_steps
+
+**Outputs:**
+- `./checkpoints_imagenet/best_model.pth` - Best model (lowest loss)
+- `./checkpoints_imagenet/final_model.pth` - Final model
+- `./vis_imagenet/epoch_*.png` - Visualization grids (grayscale | prediction | ground truth)
+
+**Example Visualization Grid:**
+```
+Row 1: Grayscale inputs (4 samples)
+Row 2: Model predictions (4 samples)
+Row 3: Ground truth colors (4 samples)
+```
+
+---
+
+#### Which Training Method to Choose?
+
+| Aspect | Standard (train.py) | Improved (train_improved.py) |
+|--------|---------------------|------------------------------|
+| **Dataset** | COCO 2017 (5K images, 80 classes) | ImageNet-1K (1.28M images, 1000 classes) |
+| **Training Time** | ~20 hours (Stage 1+2) | ~12-100+ hours (depends on num_classes) |
+| **Good For** | Natural landscapes, cool tones | Diverse objects, warm tones |
+| **Limitations** | Weak on flowers, faces, sunsets | Requires HuggingFace, more compute |
+| **Setup** | Manual dataset download | Automatic dataset loading |
+| **Recommended For** | Quick baseline, limited compute | Better generalization, more diversity |
+
+**Recommendation:**
+- **Start with `train.py`** if you want quick results on natural landscapes
+- **Use `train_improved.py`** if you want better warm-tone performance and have compute resources
+
+---
 
 ### Inference
 
@@ -631,19 +739,120 @@ This is a classic case of data bias propagation. The model's failures are not ar
 
 ---
 
-**Recommended Improvements:**
+### Improvement Attempts
 
+#### Experiment: ImageNet-1K Fine-tuning
+
+To address the warm-tone bias issue, I conducted an additional experiment using a more diverse dataset:
+
+**Dataset Change:**
+- **New Dataset**: [ImageNet-1K-128x128](https://huggingface.co/datasets/benjamin-paine/imagenet-1k-128x128)
+- **Dataset Statistics**: 1,000 categories, 1.28M images total
+- **Subset Used**: 100 randomly selected categories (due to computational constraints)
+- **Rationale**: ImageNet contains more diverse object categories including flowers, animals, and various natural scenes with warmer color palettes
+
+**Training Configuration:**
+- **Training Time**: ~12 hours on A100 40GB
+- **Epochs**: 15 (full model fine-tuning)
+- **Parameters**: All parameters unfrozen
+- **Results**: [Google Drive - ImageNet Fine-tuned Results](https://drive.google.com/drive/folders/1XR9T2PQXWMKC2Og2bDcVpdEJWSebdHpS?usp=share_link)
+
+**Training Loss Curve (ImageNet - 15 Epochs):**
+
+The improved training on ImageNet dataset shows comprehensive loss tracking across 15 epochs:
+
+![ImageNet Training Loss](./images/improved_training_loss.png)
+
+**Loss Analysis:**
+- **Total Loss (Blue)**: Decreased from 15.7 to 13.6, showing steady convergence
+- **Lab Loss (Green)**: Mirrors total loss closely, indicating Lab color space optimization is the dominant component
+- **LPIPS Loss (Red)**: Decreased from 0.245 to 0.18, demonstrating improved perceptual quality
+- **Best Model**: Achieved at Epoch 15 with Total Loss of 13.62
+
+**Key Observations:**
+- ✓ **Smooth convergence**: No significant oscillations or instability throughout training
+- ✓ **Consistent improvement**: Both Lab and LPIPS losses decrease together, indicating balanced optimization
+- ✓ **Lower final loss vs COCO**: ImageNet training achieves 13.62 compared to COCO's 11.60, but note that different datasets make direct loss comparison less meaningful
+- ⚠ **Plateauing trend**: Loss curve shows some flattening after Epoch 10, suggesting potential benefit from longer training
 
 ---
 
-## Data Splits
+**Comparative Results:**
 
-### Current Implementation
-- **Training**: 5,000 images (COCO 2017 Validation, 100%)
-- **Validation**: 0 images
-- **Test**: User-provided (images starting with "G")
+Below are side-by-side comparisons showing improvements and trade-offs:
 
-**Justification**: With only 5,000 images, using the entire dataset for training maximizes performance. Stage 2 augmentation prevents overfitting, and the fixed training schedule eliminates the need for validation-based hyperparameter tuning.
+**Case 1: Flower Colorization (Improvement) ✓**
+
+| COCO-trained (Old) | ImageNet-trained (New) | Notes |
+|:------------------:|:----------------------:|:------|
+| ![P16 COCO](./images/P_16.jpg) | ![G16 ImageNet](./images/G_16.jpg) | **Old (COCO):**<br>✗ Fails to colorize petals<br>✗ Neutral/desaturated tones<br><br>**New (ImageNet):**<br>✓ Visible color prediction<br>✓ Warmer tones on petals<br>⚠ Still not perfect |
+
+*Analysis*: The ImageNet-trained model shows clear improvement in flower colorization. While the colors are not perfect, the model now attempts to add warm tones (green) to the petals, whereas the COCO-trained model produced only neutral grays.
+
+**Case 2: Ship/Maritime Scene (Degradation) ✗**
+
+| COCO-trained (Old) | ImageNet-trained (New) | Notes |
+|:------------------:|:----------------------:|:------|
+| ![P17 COCO](./images/P_17.jpg) | ![G17 ImageNet](./images/G_17.jpg) | **Old (COCO):**<br>✓ Accurate building color<br>✓ Basic color of ship<br><br>**New (ImageNet):**<br>✗ incorrect tones |
+
+*Analysis*: Maybe 100 categories does not contain ship,so it performs bad.
+
+---
+
+**Discussion:**
+
+**Partial Success - Category-Dependent Improvement:**
+
+The ImageNet fine-tuning experiment reveals a **trade-off** rather than universal improvement:
+
+- ✓ **Gains**: Better warm-tone prediction for flowers and some organic subjects (previously missing in COCO)
+- ✗ **Losses**: Degraded performance on other scenes (well-represented in COCO)
+- ⚠ **Root Cause**: Only 100/1,000 ImageNet categories were used due to computational limits
+
+**Persistent Cool-Tone Bias:**
+
+An intriguing observation: **Regardless of dataset changes, the model consistently favors cool tones (blue, green) over warm tones (red, orange, yellow).**
+
+This persistent bias across different datasets suggests the issue may not be purely data-driven, but could stem from:
+
+1. **Loss Function Limitation**: 
+   - Lab L1 loss treats all color channels equally (`w_ab=1.0`)
+   - Cool tones (negative a/b values) may be easier to predict due to lower variance in natural images
+   - Warm tones require precise, high-magnitude positive a/b values, which are penalized more heavily by L1 loss
+
+2. **Model Architecture Bias**:
+   - MambaIRv2 was pretrained on image denoising tasks (neutral color preservation)
+   - The architecture may inherently favor conservative color predictions (closer to grayscale = cooler tones)
+   - Linear state space models might struggle with high-frequency color variations (vibrant reds/yellows)
+
+3. **Incomplete Dataset Coverage**:
+   - **Computational Feasibility**: Training on full ImageNet-1K (1.28M images, 1,000 categories) would require ~100+ hours
+   - **Current Limitation**: Only 100 categories tested (10% of dataset diversity)
+   - **Hypothesis**: Full ImageNet coverage might resolve remaining warm-tone issues, but this remains unverified
+
+**Future Work:**
+
+To conclusively determine whether the warm-tone bias is dataset-related or architectural:
+
+1. **Full ImageNet Training** (~100-150 hours on A100):
+   - Train on all 1,000 categories with 1.28M images
+   - If warm-tone issues persist → architectural/loss function problem
+   - If issues resolve → dataset coverage problem
+
+2. **Loss Function Redesign**:
+   - Weighted Lab loss with higher penalty for warm-tone errors: `w_a_pos > w_a_neg`, `w_b_pos > w_b_neg`
+   - Perceptual loss specifically for warm color regions
+   - Adversarial loss to encourage vibrant colorization
+
+3. **Architecture Modifications**:
+   - Replace pretrained weights with colorization-specific pretraining
+   - Add color-specific attention mechanisms
+   - Multi-scale color prediction heads
+
+**Current Limitation Acknowledgment:**
+
+Due to time and computational constraints (100+ hours for full ImageNet training), the root cause of the persistent cool-tone bias cannot be definitively determined. The partial ImageNet experiment (100 categories, 12 hours) shows promising but inconsistent improvements, suggesting that dataset diversity is a contributing factor, though potentially not the sole cause.
+
 
 ---
 
@@ -687,7 +896,7 @@ This is a classic case of data bias propagation. The model's failures are not ar
 - **PyTorch**: 2.1.1+cu118
 - **Triton**: 2.1.0
 
-### Random Seed (Add to train.py for full reproducibility)
+### Random Seed (Add to train.py and train_improvement for full reproducibility)
 ```python
 import random, numpy as np, torch
 
@@ -702,14 +911,14 @@ def set_seed(seed=42):
 set_seed(42)
 ```
 
-### Expected Training Time
+### Expected Training Time (only for train.py)
 - **Stage 1**: ~5 hours (5 epochs, ~1 hour per epoch) on A100 40GB
 - **Stage 2**: ~15 hours (15 epochs, ~1 hour per epoch) on A100 40GB
 - **Total**: ~20 hours on A100 40GB or better
 
 **Note**: Training time is approximately **1 hour per epoch**. H100 or A100 80GB may provide slight speedup but epoch time will remain similar due to model complexity.
 
-### Checkpoint Files
+### Checkpoint Files (only for train.py)
 ```
 Project Root:
 ├── mambairv2_ColorDN_15.pth  # Pretrained weights (required for training)
@@ -723,9 +932,7 @@ checkpoints/
 ### Pretrained Weights
 - **File**: `mambairv2_ColorDN_15.pth`
 - **Purpose**: Initialization for training (from MambaIR image restoration)
-- **Size**: ~200 MB (approximate)
-- **Required**: Yes, for training from scratch
-- **Optional**: No, for inference if you have trained checkpoints
+- **Size**: ~100 MB (approximate)
 
 **Why pretrained weights?**
 The model is initialized with weights pretrained on image denoising tasks. This provides:
