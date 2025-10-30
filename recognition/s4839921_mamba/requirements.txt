@@ -41,7 +41,7 @@ ninja==1.13.0
 numpy==1.26.4
 opencv-python==4.9.0.80
 orderedmultidict==1.0.1
-packaging @ file:///croot/packaging_1753775359799/work
+packaging==24.1
 pandas==2.3.3
 peft==0.17.1
 pillow==11.3.0
