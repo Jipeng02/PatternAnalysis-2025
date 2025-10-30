@@ -788,7 +788,6 @@ class UpsampleOneStep(nn.Sequential):
         return flops
 
 
-@ARCH_REGISTRY.register()
 class MambaIRv2(nn.Module):
     def __init__(self,
                  img_size=64,
