@@ -3,9 +3,18 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from MambaIR.basicsr.archs.arch_util import to_2tuple, trunc_normal_
+import sys
+import os
+
+_current_dir = os.path.dirname(os.path.abspath(__file__))
+_mamba_path = os.path.join(_current_dir, 'MambaIR')
+if _mamba_path not in sys.path:
+    sys.path.insert(0, _mamba_path)
+
+from basicsr.archs.arch_util import to_2tuple, trunc_normal_
+from basicsr.utils.registry import ARCH_REGISTRY
+
 from mamba_ssm.ops.selective_scan_interface import selective_scan_fn, selective_scan_ref
-from MambaIR.basicsr.utils.registry import ARCH_REGISTRY
 from einops import rearrange, repeat
 
 
