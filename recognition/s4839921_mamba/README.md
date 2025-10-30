@@ -12,16 +12,41 @@
 - [Architecture Visualization](#architecture-visualization)
 - [How It Works](#how-it-works)
 - [Dependencies](#dependencies)
+  - [Core Libraries](#core-libraries)
+  - [Dataset & Data Processing](#dataset--data-processing)
+  - [Model & Training](#model--training)
+  - [Utilities](#utilities)
+  - [Networking & HTTP](#networking--http)
+  - [System & Development](#system--development)
+  - [Python & CUDA Requirements](#python--cuda-requirements)
+  - [Complete Dependencies](#complete-dependencies)
 - [Installation](#installation)
+  - [Clone the Repository](#1-clone-the-repository)
+  - [Set up Conda Environment](#2-set-up-conda-environment)
+  - [Download Pretrained Weights](#3-download-pretrained-weights)
+  - [Verify Installation](#4-verify-installation)
+  - [Quick Start Summary](#quick-start-summary)
 - [Dataset & Preprocessing](#dataset--preprocessing)
+  - [Dataset](#dataset)
+  - [Download Instructions](#download-instructions)
+  - [Preprocessing Pipeline](#preprocessing-pipeline)
+  - [Grayscale Conversion](#grayscale-conversion)
 - [Training Strategy](#training-strategy)
+  - [Data Splits](#data-splits)
+  - [Training Configuration](#training-configuration)
+  - [Gradient Clipping](#gradient-clipping)
 - [Usage](#usage)
   - [Training](#training)
   - [Inference](#inference)
 - [Example Results](#example-results)
-- [Data Splits](#data-splits)
+  - [Test Dataset](#test-dataset)
+  - [Input/Output Comparison](#inputoutput-comparison)
+  - [Training Loss Curves](#training-loss-curves)
+  - [Stage 2 Results - Visual Comparison](#stage-2-results---visual-comparison)
+  - [Qualitative Analysis](#qualitative-analysis)
+  - [Improvement Attempts](#improvement-attempts)
 - [References](#references)
-- [Reproducibility](#reproducibility)
+- [Contact](#contact)
 
 ---
 
@@ -937,83 +962,6 @@ Due to time and computational constraints (100+ hours for full ImageNet training
 
 ---
 
-## Reproducibility
-
-### Hardware Environment
-- **GPU**: NVIDIA A100 (≥40GB) or better (H100, A100 80GB)
-  - **Minimum VRAM**: 20 GB
-  - **Recommended**: A100 40GB or higher
-  - **Not suitable**: Consumer GPUs (RTX 3090/4090), V100 16GB
-- **RAM**: ≥32 GB
-- **Storage**: ≥15 GB (packages and dataset)
-
-### Software Environment
-- **OS**: Linux (Ubuntu 20.04+ recommended)
-  - **Required**: Linux-based system for CUDA 11.8 and Mamba SSM compilation
-  - **Not supported**: macOS, Windows
-- **CUDA**: 11.8
-- **Python**: 3.8 - 3.11
-- **PyTorch**: 2.1.1+cu118
-- **Triton**: 2.1.0
-
-### Random Seed (Add to train.py and train_improvement for full reproducibility)
-```python
-import random, numpy as np, torch
-
-def set_seed(seed=42):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-set_seed(42)
-```
-
-### Expected Training Time (only for train.py)
-- **Stage 1**: ~5 hours (5 epochs, ~1 hour per epoch) on A100 40GB
-- **Stage 2**: ~15 hours (15 epochs, ~1 hour per epoch) on A100 40GB
-- **Total**: ~20 hours on A100 40GB or better
-
-**Note**: Training time is approximately **1 hour per epoch**. H100 or A100 80GB may provide slight speedup but epoch time will remain similar due to model complexity.
-
-### Checkpoint Files (only for train.py)
-```
-Project Root:
-├── mambairv2_ColorDN_15.pth  # Pretrained weights (required for training)
-
-checkpoints/
-├── stage_1.pth               # After 5 epochs (shallow layers)
-├── best_stage_2.pth          # Lowest loss during Stage 2
-└── stage_2.pth               # Final model after 15 epochs
-```
-
-### Pretrained Weights
-- **File**: `mambairv2_ColorDN_15.pth`
-- **Purpose**: Initialization for training (from MambaIR image restoration)
-- **Size**: ~100 MB (approximate)
-
-**Why pretrained weights?**
-The model is initialized with weights pretrained on image denoising tasks. This provides:
-1. Better feature extraction capabilities from the start
-2. Faster convergence during training
-3. Improved final performance compared to random initialization
-
-### Inference Speed
-- **Single 128×128 image**: ~1s (A100GPU)
-- **Single 1k image**: ~5s (A100GPU)
-
----
-
-## License
-
-This project builds upon [MambaIR](https://github.com/csguoh/MambaIR) which is licensed under the Apache License 2.0.
-
-COCO dataset is licensed under Creative Commons Attribution 4.0.
-
----
-
 ## Contact
 
 **Student ID**: s4839921  
@@ -1025,8 +973,4 @@ For questions or issues, please open an issue in this repository.
 
 ---
 
-## Acknowledgments
 
-- MambaIR authors for the base architecture
-- COCO dataset creators for training data
-- PyTorch and Mamba SSM development teams
