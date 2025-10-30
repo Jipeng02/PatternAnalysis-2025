@@ -227,6 +227,26 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
   - Training requires >20 GB VRAM due to model size and batch processing
 - **Not recommended**: Consumer GPUs with <20GB VRAM (RTX 3090, RTX 4090, V100 16GB)
 
+### ⚠️ Important Note for Google Colab Users
+
+**Google Colab does NOT support CUDA 11.8**. If you want to run this project on Google Colab, you need to install compatible versions manually:
+
+```bash
+# Do NOT use requirements.txt on Google Colab
+# Instead, install these packages individually:
+!pip install causal_conv1d
+!pip install mamba-ssm
+!pip install lpips
+!pip install einops pillow opencv-python tqdm scipy
+```
+
+**Why?** Google Colab uses a newer CUDA version (12.x), which is incompatible with the CUDA 11.8-specific packages in `requirements.txt`. The commands above will automatically install versions compatible with Colab's CUDA environment.
+
+**Limitations on Colab:**
+- ⚠️ Free tier: T4 GPU (16GB VRAM) - **insufficient** for full training (requires >20GB)
+- ✅ Colab Pro/Pro+: A100 (40GB) or V100 (32GB) - adequate for training
+- 🔧 Batch size may need reduction on smaller GPUs
+
 ### Complete Dependencies
 See `requirements.txt` for the complete list of all dependencies including:
 - **Math & Computation**: sympy (1.14.0), mpmath (1.3.0), networkx (3.3)
