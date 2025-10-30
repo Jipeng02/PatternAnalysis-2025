@@ -875,6 +875,11 @@ Due to time and computational constraints (100+ hours for full ImageNet training
 [4] **COCO 2017 Validation Dataset**  
     [Hugging Face Dataset Viewer](https://huggingface.co/datasets/rafaelpadilla/coco2017/viewer/default/val)
 
+[5] **ImageNet-1K-128x128 Dataset**  
+    Benjamin Paine  
+    [Hugging Face Dataset](https://huggingface.co/datasets/benjamin-paine/imagenet-1k-128x128)  
+    Preprocessed ImageNet-1K dataset with 128×128 resolution, 1,000 categories, 1.28M images
+
 ---
 
 ## Reproducibility
