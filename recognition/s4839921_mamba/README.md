@@ -219,7 +219,10 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 | `SQLAlchemy` | 2.0.44 | SQL toolkit |
 | `Jinja2` | 3.1.6 | Template engine |
 
-### CUDA Requirements
+### Python & CUDA Requirements
+- **Python**: 3.10 (recommended)
+  - **Supported versions**: 3.8, 3.9, 3.10, 3.11
+  - **Recommended**: Python 3.10 for best compatibility with all dependencies
 - **CUDA**: 11.8 (compatible with torch 2.1.1+cu118)
 - **Triton**: 2.1.0 (for efficient CUDA kernels)
 - **GPU**: NVIDIA A100 (≥40GB VRAM) or better recommended
@@ -240,7 +243,7 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 !pip install einops pillow opencv-python tqdm scipy
 ```
 
-**Why?** Google Colab uses a newer CUDA version (12.x), which is incompatible with the CUDA 11.8-specific packages in `requirements.txt`. The commands above will automatically install versions compatible with Colab's CUDA environment.
+**Note:** PyPI does not provide wheel builds that match the CUDA 11.8-specific PyTorch binaries, so pip cannot reliably install the exact torch package required. Conda is also unreliable inside Google Colab, so use Colab's preinstalled CUDA and PyTorch (the latest system-provided versions) instead of attempting to install CUDA‑11.8-specific packages.
 
 **Limitations on Colab:**
 - ⚠️ Free tier: T4 GPU (16GB VRAM) - **insufficient** for full training (requires >20GB)
@@ -248,30 +251,60 @@ Total Loss = w_ab·loss_ab + w_L·loss_L + w_lpips·loss_lpips
 - 🔧 Batch size may need reduction on smaller GPUs
 
 ### Complete Dependencies
-See `requirements.txt` for the complete list of all dependencies including:
-- **Math & Computation**: sympy (1.14.0), mpmath (1.3.0), networkx (3.3)
-- **Networking**: Twisted (25.5.0), Automat (25.4.16), hyperlink (21.0.0)
-- **Data Formats**: simplejson (3.20.2), tomli (2.3.0), furl (2.1.4)
-- **Build Tools**: ninja (1.13.0), buildtools (1.0.6), docopt (0.6.2)
-- **Additional**: hf-xet (1.1.10), orderedmultidict (1.0.1), and more
 
-Total: **70+ packages** ensuring full compatibility across different systems and use cases.
+All dependencies are managed through conda and specified in `environment.yml`. The environment includes:
+
+**Conda Channels:**
+- `defaults` - Standard conda packages
+- `nvidia/label/cuda-11.8.0` - NVIDIA CUDA 11.8 toolkit
+
+**System Dependencies (from conda):**
+- Python 3.10.13
+- CUDA toolkit 11.8.0 + cuda-nvcc 11.8.89
+- Build tools: gcc, g++, libstdcxx-ng
+- System libraries: libffi, libuuid, libxcb, zlib, openssl
+
+**Python Packages (70+ packages via pip):**
+- **Deep Learning**: torch 2.1.1+cu118, torchvision 0.16.1+cu118, torchaudio 2.1.1+cu118
+- **State Space Models**: mamba-ssm 1.0.1, causal-conv1d 1.1.1, triton 2.1.0
+- **Computer Vision**: opencv-python 4.9.0.80, Pillow 11.3.0, lpips 0.1.4
+- **Data Processing**: datasets 4.3.0, pandas 2.3.3, pyarrow 22.0.0, numpy 1.26.4
+- **Model Training**: accelerate 1.10.1, transformers 4.30.2, peft 0.17.1, timm 1.0.20
+- **Utilities**: einops 0.8.1, tqdm 4.67.1, scipy 1.15.3, PyYAML 6.0.3
+- **Networking**: aiohttp 3.13.1, httpx 0.28.1, requests 2.32.5, Twisted 25.5.0
+- **Additional**: See `environment.yml` for the complete list of all 70+ packages
+
+Total: **70+ packages** ensuring full compatibility with CUDA 11.8 on Linux systems.
+
+**Note**: Using `conda env create -f environment.yml` ensures all packages are installed with correct versions and dependencies, avoiding PyPI compatibility issues.
 
 ---
 
 ## Installation
 
-### 1. Clone Repository
+### 1. Clone the Repository
 ```bash
 git clone https://github.com/Jipeng02/PatternAnalysis-2025.git
 cd PatternAnalysis-2025/recognition/s4839921_mamba
 ```
 
-### 2. Install Dependencies
+### 2. Set up Conda Environment
+
+**This project requires conda** for dependency management. The environment is configured with Python 3.10 and CUDA 11.8.
+
 ```bash
-# Install all required packages from requirements.txt
-pip install -r requirements.txt
+# Create environment from environment.yml
+conda env create -f environment.yml
+
+# Activate the environment
+conda activate torch
 ```
+
+**What gets installed:**
+- Python 3.10.13 with CUDA 11.8 toolkit
+- PyTorch 2.1.1+cu118 (torch, torchvision, torchaudio)
+- Mamba-SSM 1.0.1 + causal-conv1d 1.1.1
+- All required dependencies (70+ packages) automatically
 
 **Note**: This project requires a **Linux** environment for proper compilation and execution.
 - **mamba-ssm** and **causal-conv1d** require CUDA 11.8 toolkit and a compatible C++ compiler (gcc 7+)
@@ -308,7 +341,9 @@ python -c "print('CUDA available:', torch.cuda.is_available())"
 git clone https://github.com/Jipeng02/PatternAnalysis-2025.git
 cd PatternAnalysis-2025/recognition/s4839921_mamba
 
-pip install -r requirements.txt
+# Create and activate conda environment
+conda env create -f environment.yml
+conda activate torch
 
 # Download pretrained weights
 wget https://github.com/csguoh/MambaIR/releases/download/v1.0/mambairv2_ColorDN_15.pth
