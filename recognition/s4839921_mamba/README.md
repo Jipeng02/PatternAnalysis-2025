@@ -865,9 +865,9 @@ Below are side-by-side comparisons showing improvements and trade-offs:
 
 | COCO-trained (Old) | ImageNet-trained (New) | Notes |
 |:------------------:|:----------------------:|:------|
-| ![P16 COCO](./images/P_16.jpg) | ![G16 ImageNet](./images/G_16.jpg) | **Old (COCO):**<br>✗ Fails to colorize petals<br>✗ Neutral/desaturated tones<br><br>**New (ImageNet):**<br>✓ Visible color prediction<br>✓ Warmer tones on petals<br>⚠ Still not perfect |
+| ![P16 COCO](./images/P_16.jpg) | ![G16 ImageNet](./images/G_16.jpg) | **Old (COCO):**<br>✗ Fails to colorize petals<br>✗ Neutral/desaturated tones<br><br>**New (ImageNet):**<br>✓ Visible color prediction<br>✓ Green color on petals<br>⚠ Still not perfect |
 
-*Analysis*: The ImageNet-trained model shows clear improvement in flower colorization. While the colors are not perfect, the model now attempts to add warm tones (green) to the petals, whereas the COCO-trained model produced only neutral grays.
+*Analysis*: The ImageNet-trained model shows clear improvement in flower colorization. While the colors are not perfect, the model now attempts to add green to the petals, whereas the COCO-trained model produced only neutral grays.
 
 **Case 2: Ship/Maritime Scene (Degradation) ✗**
 
